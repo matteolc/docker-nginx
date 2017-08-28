@@ -1,0 +1,43 @@
+version: "3.3"
+services:
+  db:
+    image: voxbox/postgres
+    volumes:
+      - db:/var/lib/postgresql
+    ports:
+      - "5432:5432"      
+    environment:
+      - DEBUG=false
+      - PG_TRUST_LOCALNET=true
+      - DB_USER=app
+      - DB_PASS=demo
+      - DB_NAME=app_development
+      - DB_EXTENSION=pgcrypto,citext,hstore,unaccent,pg_trgm
+    volumes:
+      - db:/var/lib/postgresql/data  
+    ports:
+      - "5432:5432"    
+    deploy:      
+      restart_policy:
+        condition: on-failure  
+    networks:
+      - web   
+  app:
+    image: voxbox/rails-api:latest
+    command: foreman start
+    ports:
+      - "8080:5000"  
+    deploy:      
+      restart_policy:
+        condition: on-failure         
+    volumes:
+      - app:/app
+    networks:
+      - web
+    depends_on:
+      - db    
+networks:
+  web: 
+volumes:
+  db: 
+  app: 
