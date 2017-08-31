@@ -15,12 +15,6 @@
 
 echo "cleaning up ..."
 
-STACK_NAME=api
+APP=nginx
 
-docker stack rm $STACK_NAME
-docker swarm leave -f
-
-docker network prune -f
-docker volume prune -f
-
-docker rm $(docker ps -a -q)
+docker rm ${APP} -f

@@ -1,27 +1,31 @@
 # Introduction
 
-`Dockerfile` to create a [Docker](https://www.docker.com/) container image for development of a [Rails](http://rubyonrails.org/) application.
+`Dockerfile` to create a [Docker](https://www.docker.com/) container image for [Nginx](https://nginx.org/en/) in SSL mode and with [NGINX Amplify](https://amplify.nginx.com) enabled.
 
-See the `Dockerfile` for further details on how the application is bootstrapped.
+[NGINX Amplify](https://amplify.nginx.com/signup/) is a free monitoring tool that can be used with a microservice architecture based on NGINX and Docker. Amplify is developed and maintained by Nginx Inc. — the company behind the NGINX software.
 
-The image is based on [Debian Jessie](https://www.debian.org/).
+With Amplify it is possible to collect and aggregate metrics across Docker containers, and present a coherent set of visualizations of the key NGINX performance data, such as active connections or requests per second. It is also easy to quickly check for any performance degradations, traffic anomalies, and get a deeper insight into the NGINX configuration in general.
+
+![](amplify.png?raw=true "Amplify dashboard")
 
 # Getting started
 
-Execute `run.sh`
+Unless already done, you have to [sign up](https://amplify.nginx.com/signup/), create an account in NGINX Amplify, and obtain a valid API key.
+
+Execute `run.sh` after setting the environment variable AMPLIFY_KEY to your Amplify key.
 
 ## Installation
 
-Automated builds of the image are available on [Dockerhub](https://hub.docker.com/r/voxbox/rails-api/) and is the recommended method of installation.
+Automated builds of the image are available on [Dockerhub](https://hub.docker.com/r/voxbox/nginx/) and is the recommended method of installation.
 
 ```bash
-docker pull voxbox/rails-api:latest
+docker pull voxbox/nginx:latest
 ```
 
 Alternatively you can build the image yourself.
 
 ```bash
-docker build -t voxbox/postgresql github.com/matteolc/docker-rails-api
+docker build -t nginx github.com/matteolc/docker-nginx
 ```
 
 ## Quickstart
@@ -48,7 +52,7 @@ If the above recommendations do not help then [report your issue](../../issues/n
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/t2_airtime. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/docker-nginx. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
@@ -56,5 +60,5 @@ The container is available as open source under the terms of the [MIT License](h
 
 ## Code of Conduct
 
-Everyone interacting in the T2Airtime project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/t2_airtime/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the T2Airtime project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/docker-nginx/blob/master/CODE_OF_CONDUCT.md).
 

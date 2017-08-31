@@ -1,77 +1,84 @@
-FROM ruby:latest
+FROM nginx
 
 LABEL \
 	io.voxbox.build-date=${BUILD_DATE} \
-	io.voxbox.name=rails-api \
+	io.voxbox.name=nginx \
 	io.voxbox.vendor=voxbox.io \
     maintainer=matteo@voxbox.io \
-	io.voxbox.vcs-url=https://github.com/matteolc/docker-rails-api.git \
+	io.voxbox.vcs-url=https://github.com/matteolc/docker-nginx.git \
 	io.voxbox.vcs-ref=${VCS_REF} \
 	io.voxbox.license=MIT
 
-ARG APP_NAME
-ARG ADMIN_SECRET
-ARG USER_SECRET
-ARG RAILS_ENV
+# Install the NGINX Amplify Agent
+RUN apt-get update \
+    && apt-get install -y curl python apt-transport-https apt-utils gnupg1 procps openssl \
+    && echo 'deb https://packages.amplify.nginx.com/debian/ stretch amplify-agent' > /etc/apt/sources.list.d/nginx-amplify.list \
+    && curl -fs https://nginx.org/keys/nginx_signing.key | apt-key add - > /dev/null 2>&1 \
+    && apt-get update \
+    && apt-get install -qqy nginx-amplify-agent \
+    && apt-get purge -qqy curl apt-transport-https apt-utils gnupg1 \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV APP_HOME=app \
-    APP_NAME=${APP_NAME:-app} \
-    ADMIN_SECRET=${ADMIN_SECRET:-12345678} \
-    USER_SECRET=${USER_SECRET:-12345678} \
-    RAILS_ENV=${RAILS_ENV:-development}
+ARG DH_SIZE
 
-RUN apt-get update && apt-get install -y \
-  build-essential \
-  sudo \
-  curl \
-  wget \
-  git 
+ENV APP=nginx \
+    DH_SIZE=${DH_SIZE:-"2048"}
 
-RUN gem install \
-      bundler \
-      rails \
-      foreman \
-      --no-rdoc --no-ri
+ENV HOME=/etc/${APP} \
+    LOGDIR=/var/log/${APP}
 
-ARG ROLLBAR_ACCESS_TOKEN
-ARG DB_USER
-ARG DB_SECRET
-ARG DB_HOST
-ARG GIT_USER_EMAIL
-ARG GIT_USER_NAME
+# Keep the nginx logs inside the container
+RUN unlink ${LOGDIR}/access.log \
+    && unlink ${LOGDIR}/error.log \
+    && touch ${LOGDIR}/access.log \
+    && touch ${LOGDIR}/error.log \
+    && chown nginx ${LOGDIR}/*log \
+    && chmod 644 ${LOGDIR}/*log
 
-ENV DB_USER=${DB_USER:-$APP_NAME} \
-    DB_SECRET=${DB_SECRET:-demo} \
-    DB_HOST=${DB_HOST:-db} \
-    GIT_USER_EMAIL=${GIT_USER_EMAIL:-"you@example.com"} \
-    GIT_USER_NAME=${GIT_USER_NAME:-"Your Name"}     
+RUN rm -Rf ${HOME}/conf.d/* \
+    && rm ${HOME}/nginx.conf \
+    && mkdir ${HOME}/conf.d/location \
+    && mkdir ${HOME}/ssl
+COPY build/nginx.conf ${HOME}/nginx.conf
+COPY build/conf.d/ssl.conf ${HOME}/conf.d
+# Copy nginx stub_status config
+COPY build/conf.d/stub_status.conf ${HOME}/conf.d
+COPY build/conf.d/location/default ${HOME}/conf.d/location
 
-WORKDIR ${APP_NAME}
+# API_KEY is required for configuring the NGINX Amplify Agent.
+# It could be your real API key for NGINX Amplify here if you wanted
+# to build your own image to host it in a private registry.
+# However, including private keys in the Dockerfile is not recommended.
+# Use the environment variables at runtime as described below.
+ARG API_KEY
+ENV API_KEY=${API_KEY:-}
 
-RUN git config --global \
-      user.email ${GIT_USER_EMAIL} && \
-    git config --global \
-      user.name ${GIT_USER_NAME}
+# If AMPLIFY_IMAGENAME is set, the startup wrapper script will use it to
+# generate the 'imagename' to put in the /etc/amplify-agent/agent.conf
+# If several instances use the same 'imagename', the metrics will
+# be aggregated into a single object in NGINX Amplify. Otherwise Amplify
+# will create separate objects for monitoring (an object per instance).
+# AMPLIFY_IMAGENAME can also be passed to the instance at runtime as
+# described below.
 
-RUN echo "ROLLBAR_ACCESS_TOKEN=${ROLLBAR_ACCESS_TOKEN}" > .env && \
-    echo "ADMIN_SECRET=${ADMIN_SECRET}" >> .env && \
-    echo "USER_SECRET=${USER_SECRET}" >> .env && \
-    echo "DB_USER=${DB_USER}" >> .env && \
-    echo "DB_SECRET=${DB_SECRET}" >> .env && \
-    echo "DB_HOST=${DB_HOST}" >> .env
+ARG AMPLIFY_IMAGENAME
+ENV AMPLIFY_IMAGENAME=${AMPLIFY_IMAGENAME:-my-docker-instance-123}
 
-RUN rails new . \
-    -m https://raw.github.com/matteolc/rails_api_template/master/rails_api_generator.rb \
-    -d postgresql \
-    --skip-yarn \
-    --skip-action-cable \
-    --skip-sprockets \
-    --skip-spring \
-    --skip-coffee \
-    --skip-javascript \
-    --skip-turbolinks \
-    --skip-bundle \
-    --api      
+ARG NGINX_HOST
+ENV NGINX_HOST=${NGINX_HOST:-"localhost"}
+
+# The /entrypoint.sh script will launch nginx and the Amplify Agent.
+# The script honors API_KEY and AMPLIFY_IMAGENAME environment
+# variables, and updates /etc/amplify-agent/agent.conf accordingly.
+
+COPY runtime/ ${HOME}/
+COPY entrypoint.sh /sbin/entrypoint.sh
+RUN chmod 755 /sbin/entrypoint.sh
+
+# TO set/override API_KEY and AMPLIFY_IMAGENAME when starting an instance:
+# docker run --name my-nginx1 -e API_KEY='..effc' -e AMPLIFY_IMAGENAME="service-name" -d nginx-amplify
+
+ENTRYPOINT ["/sbin/entrypoint.sh"]
 
 
 
