@@ -8,7 +8,7 @@ source ${HOME}/functions
 if [[ ${1:0:1} = '-' ]]; then
   EXTRA_ARGS="$@"
   set --
-elif [[ ${1} == nginx || ${1} == $(which nginx) ]]; then
+elif [[ ${1} == ${APP} || ${1} == $(which ${APP}) ]]; then
   EXTRA_ARGS="${@:2}"
   set --
 fi
@@ -20,18 +20,14 @@ if [[ -z ${1} ]]; then
   create_cert
   set_default_config
   
-  echo "Starting nginx ..."
+  echo "Starting ${APP} ..."
   nginx -g "daemon off;" &
-
   nginx_pid=$!  
 
   setup_amplify
 
-  #echo "Starting monit"
-  #service monit start
-
   wait ${nginx_pid}
-  echo "nginx master process has stopped, exiting."
+  echo "${APP} has stopped, exiting."
 
 else
   exec "$@"
