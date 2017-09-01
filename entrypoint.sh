@@ -19,14 +19,16 @@ if [[ -z ${1} ]]; then
   create_dh
   create_cert
   set_default_config
-
-  # Launch nginx
-  echo "starting nginx ..."
+  
+  echo "Starting nginx ..."
   nginx -g "daemon off;" &
 
   nginx_pid=$!  
 
   setup_amplify
+
+  #echo "Starting monit"
+  #service monit start
 
   wait ${nginx_pid}
   echo "nginx master process has stopped, exiting."

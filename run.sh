@@ -30,10 +30,11 @@ docker run -d \
   -e DH_SIZE=$DH_SIZE \
   -p 80:80 \
   -p 443:443 \
+  --restart=always \
   voxbox/nginx:latest
 echo "---------------------------------------------------------------------"
 echo "Test logs"
 echo "---------------------------------------------------------------------"
 docker exec ${APP} \
   tail /var/log/amplify-agent/agent.log
-docker logs ${APP} -f 
+docker logs ${APP} -f  

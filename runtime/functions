@@ -2,6 +2,7 @@
 set -e
 
 DH="${HOME}/ssl/dh.pem"
+CFG="${HOME}/conf.d/default.conf"
 agent_conf_file="/etc/amplify-agent/agent.conf"
 agent_log_file="/var/log/amplify-agent/agent.log"
 nginx_status_conf="${HOME}/conf.d/stub_status.conf"
@@ -9,8 +10,11 @@ api_key=""
 amplify_imagename=""
 
 set_default_config() {
-  envsubst \$NGINX_HOST < ${HOME}/conf.d/ssl.conf > ${HOME}/conf.d/default.conf
-  rm ${HOME}/conf.d/ssl.conf
+    if [ ! -e "$CFG" ]
+    then    
+        envsubst \$NGINX_HOST < ${HOME}/conf.d/ssl.conf > ${HOME}/conf.d/default.conf
+        rm ${HOME}/conf.d/ssl.conf
+    fi
 }
 
 create_dh() {

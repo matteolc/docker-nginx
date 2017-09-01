@@ -9,15 +9,12 @@ LABEL \
 	io.voxbox.vcs-ref=${VCS_REF} \
 	io.voxbox.license=MIT
 
-# Install the NGINX Amplify Agent
 RUN apt-get update \
     && apt-get install -y curl python apt-transport-https apt-utils gnupg1 procps openssl \
     && echo 'deb https://packages.amplify.nginx.com/debian/ stretch amplify-agent' > /etc/apt/sources.list.d/nginx-amplify.list \
     && curl -fs https://nginx.org/keys/nginx_signing.key | apt-key add - > /dev/null 2>&1 \
     && apt-get update \
-    && apt-get install -qqy nginx-amplify-agent \
-    && apt-get purge -qqy curl apt-transport-https apt-utils gnupg1 \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -qqy nginx-amplify-agent
 
 ARG DH_SIZE
 
@@ -41,9 +38,12 @@ RUN rm -Rf ${HOME}/conf.d/* \
     && mkdir ${HOME}/ssl
 COPY build/nginx.conf ${HOME}/nginx.conf
 COPY build/conf.d/ssl.conf ${HOME}/conf.d
+COPY build/conf.d/location/default ${HOME}/conf.d/location
 # Copy nginx stub_status config
 COPY build/conf.d/stub_status.conf ${HOME}/conf.d
-COPY build/conf.d/location/default ${HOME}/conf.d/location
+
+#COPY build/monit/conf-enabled/nginx /etc/monit/conf-enabled
+#COPY build/monit/conf.d/monitrc.local /etc/monit/conf.d
 
 # API_KEY is required for configuring the NGINX Amplify Agent.
 # It could be your real API key for NGINX Amplify here if you wanted
@@ -77,6 +77,9 @@ RUN chmod 755 /sbin/entrypoint.sh
 
 # TO set/override API_KEY and AMPLIFY_IMAGENAME when starting an instance:
 # docker run --name my-nginx1 -e API_KEY='..effc' -e AMPLIFY_IMAGENAME="service-name" -d nginx-amplify
+
+HEALTHCHECK --interval=5s --timeout=10s --retries=3 \
+  CMD ${HOME}/healthcheck
 
 ENTRYPOINT ["/sbin/entrypoint.sh"]
 
